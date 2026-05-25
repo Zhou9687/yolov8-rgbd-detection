@@ -144,14 +144,16 @@ D:\ProjectCode\PyCharm\ultralytics-main/
 ### 1. 修改的核心文件 ⚙️
 
 #### `ultralytics/data/dataset.py`
+
 **修改位置**: 第 92-191 行  
 **修改内容**: `load_image()` 方法
 
 **关键修改点**:
+
 ```python
 # 修改前
 im = cv2.imread(im_path)  # 只读取3通道
-return im, (h, w)         # 返回2个值
+return im, (h, w)  # 返回2个值
 
 # 修改后
 im = cv2.imread(im_path, cv2.IMREAD_UNCHANGED)  # 读取所有通道
@@ -162,6 +164,7 @@ return im, (h, w), im.shape[:2]  # 返回3个值
 ```
 
 **影响范围**:
+
 - ✅ 支持4通道PNG图像加载
 - ✅ 正确的颜色空间转换
 - ✅ 兼容原有3通道模式
@@ -169,24 +172,27 @@ return im, (h, w), im.shape[:2]  # 返回3个值
 ---
 
 #### `ultralytics/cfg/models/v8/yolov8-rgbd.yaml`
+
 **文件类型**: 模型配置文件  
 **关键配置**:
+
 ```yaml
 # YOLOv8-RGBD 4-channel model
-nc: 1              # number of classes
+nc: 1 # number of classes
 depth_multiple: 0.33
 width_multiple: 0.25
-ch: 4              # ⭐ 输入通道数改为4
+ch: 4 # ⭐ 输入通道数改为4
 
 # Backbone
 backbone:
   # [from, repeats, module, args]
-  - [-1, 1, Conv, [64, 3, 2]]  # 0-P1/2  ← 第一层接收4通道输入
-  - [-1, 1, Conv, [128, 3, 2]]  # 1-P2/4
+  - [-1, 1, Conv, [64, 3, 2]] # 0-P1/2  ← 第一层接收4通道输入
+  - [-1, 1, Conv, [128, 3, 2]] # 1-P2/4
   # ... 其余层保持不变
 ```
 
 **作用**:
+
 - 定义4通道输入的YOLOv8架构
 - 第一层卷积从 `Conv(3, 16, ...)` 变为 `Conv(4, 16, ...)`
 
@@ -195,14 +201,16 @@ backbone:
 ### 2. 新增的核心文件 ✨
 
 #### `scripts/prepare_4ch_weights.py`
+
 **功能**: 创建4通道预训练权重  
 **输入**: `yolov8n.pt` (3通道)  
 **输出**: `yolov8_4ch_direct.pt` (4通道)
 
 **转换逻辑**:
+
 ```python
 # 读取3通道权重 [16, 3, 3, 3]
-weight_3ch = state_dict['model.0.conv.weight']
+weight_3ch = state_dict["model.0.conv.weight"]
 
 # 创建4通道权重 [16, 4, 3, 3]
 weight_4ch = torch.zeros(16, 4, 3, 3)
@@ -213,28 +221,32 @@ weight_4ch[:, 3, :, :] = torch.randn(16, 3, 3) * 0.01  # 初始化深度通道
 ---
 
 #### `train_rgbd_direct.py`
+
 **功能**: RGBD模型训练主脚本  
 **类型**: Python API训练脚本
 
 **关键配置**:
+
 ```python
 model.train(
-    data='datasets/tennis-yolo/tennis-yolo.yaml',
+    data="datasets/tennis-yolo/tennis-yolo.yaml",
     epochs=100,
     batch=4,
-    workers=0,      # ⭐ Windows多进程修复
-    amp=False,      # ⭐ 禁用AMP检查
-    mosaic=0.0,     # ⭐ 禁用Mosaic
-    mixup=0.0,      # ⭐ 禁用Mixup
-    copy_paste=0.0  # ⭐ 禁用Copy-Paste
+    workers=0,  # ⭐ Windows多进程修复
+    amp=False,  # ⭐ 禁用AMP检查
+    mosaic=0.0,  # ⭐ 禁用Mosaic
+    mixup=0.0,  # ⭐ 禁用Mixup
+    copy_paste=0.0,  # ⭐ 禁用Copy-Paste
 )
 ```
 
 ---
 
 #### `datasets/tennis-yolo/tennis-yolo.yaml`
+
 **功能**: 数据集配置文件  
 **关键配置**:
+
 ```yaml
 path: D:/ProjectCode/PyCharm/ultralytics-main/datasets/tennis-yolo
 train: images/train
@@ -244,8 +256,8 @@ nc: 1
 names:
   0: tennis_ball
 
-rgbd: true        # ⭐ 启用RGBD模式
-channels: 4       # ⭐ 4通道输入
+rgbd: true # ⭐ 启用RGBD模式
+channels: 4 # ⭐ 4通道输入
 ```
 
 ---
@@ -253,6 +265,7 @@ channels: 4       # ⭐ 4通道输入
 ### 3. 输出文件 📊
 
 #### 训练结果目录结构
+
 ```
 runs/detect/train_rgbd_python_api36/
 ├── args.yaml                   # 训练参数备份
@@ -300,6 +313,7 @@ runs/detect/train_rgbd_python_api36/
 ### RGBD图像格式
 
 #### 单文件4通道PNG（推荐）✅
+
 ```
 文件名: image_001.png
 格式: PNG
@@ -315,15 +329,18 @@ runs/detect/train_rgbd_python_api36/
 ```
 
 **读取方法**:
+
 ```python
 import cv2
-img = cv2.imread('image_001.png', cv2.IMREAD_UNCHANGED)
+
+img = cv2.imread("image_001.png", cv2.IMREAD_UNCHANGED)
 # img.shape = (480, 640, 4)
-rgb = img[:, :, :3]    # RGB通道
-depth = img[:, :, 3]   # 深度通道
+rgb = img[:, :, :3]  # RGB通道
+depth = img[:, :, 3]  # 深度通道
 ```
 
 #### 分离文件格式（备选）
+
 ```
 RGB图像: image_001.png     # 3通道彩色图
 深度图:  image_001_d.png   # 单通道深度图
@@ -383,6 +400,7 @@ RAM: 16GB+
 ## 🚀 快速开始指南
 
 ### 1. 环境准备
+
 ```bash
 # 激活conda环境
 conda activate yolov8
@@ -392,28 +410,32 @@ python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')"
 ```
 
 ### 2. 创建4通道预训练权重
+
 ```bash
 cd D:/ProjectCode/PyCharm/ultralytics-main
 python scripts/prepare_4ch_weights.py
 ```
 
 ### 3. 验证数据集
+
 ```bash
 # 检查图像通道数
 python -c "
 import cv2
-img = cv2.imread('datasets/tennis-yolo/images/train/image_001.png', 
+img = cv2.imread('datasets/tennis-yolo/images/train/image_001.png',
                  cv2.IMREAD_UNCHANGED)
 print(f'Image shape: {img.shape}')
 "
 ```
 
 ### 4. 开始训练
+
 ```bash
 python train_rgbd_direct.py
 ```
 
 ### 5. 查看结果
+
 ```bash
 # 检查模型通道数
 python -c "
@@ -437,6 +459,7 @@ print(df[['epoch', 'metrics/mAP50', 'metrics/mAP50-95']].tail(10))
 ## 📊 项目统计信息
 
 ### 代码统计
+
 ```
 修改文件数量: 3个核心文件
 新增文件数量: 7个脚本和文档
@@ -450,6 +473,7 @@ print(df[['epoch', 'metrics/mAP50', 'metrics/mAP50-95']].tail(10))
 ```
 
 ### 训练统计
+
 ```
 数据集规模:
 ├── 训练图像: 60张
@@ -466,6 +490,7 @@ print(df[['epoch', 'metrics/mAP50', 'metrics/mAP50-95']].tail(10))
 ```
 
 ### 文件大小
+
 ```
 预训练权重:
 ├── yolov8n.pt:          6.3 MB (3通道)
@@ -484,6 +509,7 @@ print(df[['epoch', 'metrics/mAP50', 'metrics/mAP50-95']].tail(10))
 ## 🔍 关键路径速查
 
 ### 训练相关
+
 ```bash
 # 训练脚本
 ./train_rgbd_direct.py
@@ -499,6 +525,7 @@ print(df[['epoch', 'metrics/mAP50', 'metrics/mAP50-95']].tail(10))
 ```
 
 ### 结果查看
+
 ```bash
 # 最佳模型
 ./runs/detect/train_rgbd_python_api36/weights/best.pt
@@ -512,6 +539,7 @@ print(df[['epoch', 'metrics/mAP50', 'metrics/mAP50-95']].tail(10))
 ```
 
 ### 文档
+
 ```bash
 # 问题分析
 ./RGBD_PROBLEM_ANALYSIS.md
@@ -531,28 +559,31 @@ print(df[['epoch', 'metrics/mAP50', 'metrics/mAP50-95']].tail(10))
 ## 🛠️ 维护和扩展
 
 ### 添加新数据集
+
 1. 准备4通道RGBD图像（PNG格式）
 2. 创建YOLO格式标注文件
 3. 编写数据集YAML配置（参考tennis-yolo.yaml）
 4. 设置 `rgbd: true` 和 `channels: 4`
 
 ### 修改模型架构
+
 1. 复制 `yolov8-rgbd.yaml`
 2. 修改 backbone/head 结构
 3. 保持第一层 `ch: 4`
 4. 重新生成4通道预训练权重
 
 ### 导出模型
+
 ```python
 from ultralytics import YOLO
 
-model = YOLO('runs/detect/train_rgbd_python_api36/weights/best.pt')
+model = YOLO("runs/detect/train_rgbd_python_api36/weights/best.pt")
 
 # 导出ONNX
-model.export(format='onnx', imgsz=640)
+model.export(format="onnx", imgsz=640)
 
 # 导出TensorRT
-model.export(format='engine', imgsz=640)
+model.export(format="engine", imgsz=640)
 ```
 
 ---
@@ -560,14 +591,18 @@ model.export(format='engine', imgsz=640)
 ## 📞 支持和反馈
 
 ### 问题报告
+
 如果遇到问题，请提供：
+
 1. 错误信息和堆栈跟踪
 2. 环境信息（Python版本、PyTorch版本、GPU型号）
 3. 数据集格式示例
 4. 复现步骤
 
 ### 贡献指南
+
 欢迎提交：
+
 - 🐛 Bug修复
 - ✨ 新功能
 - 📚 文档改进
@@ -578,6 +613,7 @@ model.export(format='engine', imgsz=640)
 ## 📝 版本历史
 
 ### v1.0 (2025-11-01)
+
 - ✅ 初始版本
 - ✅ 支持4通道RGBD训练
 - ✅ 修复所有已知问题
