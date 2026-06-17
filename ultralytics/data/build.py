@@ -2,8 +2,9 @@
 
 import os
 import random
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Dict, Iterator
+from typing import Any
 
 import numpy as np
 import torch
@@ -28,8 +29,7 @@ from ultralytics.utils.checks import check_file
 
 
 class InfiniteDataLoader(dataloader.DataLoader):
-    """
-    Dataloader that reuses workers for infinite iteration.
+    """Dataloader that reuses workers for infinite iteration.
 
     This dataloader extends the PyTorch DataLoader to provide infinite recycling of workers, which improves efficiency
     for training loops that need to iterate through the dataset multiple times without recreating workers.
@@ -85,11 +85,10 @@ class InfiniteDataLoader(dataloader.DataLoader):
 
 
 class _RepeatSampler:
-    """
-    Sampler that repeats forever for infinite iteration.
+    """Sampler that repeats forever for infinite iteration.
 
-    This sampler wraps another sampler and yields its contents indefinitely, allowing for infinite iteration
-    over a dataset without recreating the sampler.
+    This sampler wraps another sampler and yields its contents indefinitely, allowing for infinite iteration over a
+    dataset without recreating the sampler.
 
     Attributes:
         sampler (Dataset.sampler): The sampler to repeat.
@@ -105,7 +104,7 @@ class _RepeatSampler:
             yield from iter(self.sampler)
 
 
-def seed_worker(worker_id: int):  # noqa
+def seed_worker(worker_id: int):
     """Set dataloader worker seed for reproducibility across worker processes."""
     worker_seed = torch.initial_seed() % 2**32
     np.random.seed(worker_seed)
@@ -116,7 +115,7 @@ def build_yolo_dataset(
     cfg: IterableSimpleNamespace,
     img_path: str,
     batch: int,
-    data: Dict[str, Any],
+    data: dict[str, Any],
     mode: str = "train",
     rect: bool = False,
     stride: int = 32,
@@ -175,8 +174,7 @@ def build_grounding(
 
 
 def build_dataloader(dataset, batch: int, workers: int, shuffle: bool = True, rank: int = -1, drop_last: bool = False):
-    """
-    Create and return an InfiniteDataLoader or DataLoader for training or validation.
+    """Create and return an InfiniteDataLoader or DataLoader for training or validation.
 
     Args:
         dataset (Dataset): Dataset to load data from.
@@ -215,8 +213,7 @@ def build_dataloader(dataset, batch: int, workers: int, shuffle: bool = True, ra
 
 
 def check_source(source):
-    """
-    Check the type of input source and return corresponding flag values.
+    """Check the type of input source and return corresponding flag values.
 
     Args:
         source (str | int | Path | list | tuple | np.ndarray | PIL.Image | torch.Tensor): The input source to check.
@@ -262,8 +259,7 @@ def check_source(source):
 
 
 def load_inference_source(source=None, batch: int = 1, vid_stride: int = 1, buffer: bool = False, channels: int = 3):
-    """
-    Load an inference source for object detection and apply necessary transformations.
+    """Load an inference source for object detection and apply necessary transformations.
 
     Args:
         source (str | Path | torch.Tensor | PIL.Image | np.ndarray, optional): The input source for inference.
