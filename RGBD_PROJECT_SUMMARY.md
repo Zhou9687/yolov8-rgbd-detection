@@ -17,11 +17,12 @@
 **模型位置**: `runs/detect/train_rgbd_python_api36/weights/best.pt`
 
 **模型验证**:
+
 ```python
 import torch
-model = torch.load('runs/detect/train_rgbd_python_api36/weights/best.pt', 
-                   weights_only=False)
-channels = model['model'].model[0].conv.weight.shape[1]
+
+model = torch.load("runs/detect/train_rgbd_python_api36/weights/best.pt", weights_only=False)
+channels = model["model"].model[0].conv.weight.shape[1]
 print(f"模型输入通道数: {channels}")  # 输出: 4
 print("✓ 这是一个真正的4通道RGBD模型！")
 ```
@@ -65,17 +66,18 @@ print("✓ 这是一个真正的4通道RGBD模型！")
 **修改**: `load_image()` 方法
 
 **关键变化**:
+
 ```python
 # 修改前
-im = cv2.imread(im_path)                # ❌ 只读取3通道
-return im, (h, w)                       # ❌ 返回2个值
+im = cv2.imread(im_path)  # ❌ 只读取3通道
+return im, (h, w)  # ❌ 返回2个值
 
 # 修改后
 im = cv2.imread(im_path, cv2.IMREAD_UNCHANGED)  # ✅ 读取所有通道
-if im.shape[2] == 4:                            # ✅ 检测4通道
+if im.shape[2] == 4:  # ✅ 检测4通道
     b, g, r, a = cv2.split(im)
-    im = cv2.merge([r, g, b, a])                # ✅ BGRA → RGBA
-return im, (h, w), im.shape[:2]                 # ✅ 返回3个值
+    im = cv2.merge([r, g, b, a])  # ✅ BGRA → RGBA
+return im, (h, w), im.shape[:2]  # ✅ 返回3个值
 ```
 
 ---
@@ -87,6 +89,7 @@ return im, (h, w), im.shape[:2]                 # ✅ 返回3个值
 **输出**: `yolov8_4ch_direct.pt` (4通道)
 
 **转换逻辑**:
+
 ```python
 # 第一层权重转换
 weight_3ch = [16, 3, 3, 3]  # 3通道输入
@@ -106,20 +109,21 @@ weight_4ch[:, 3, :, :] = torch.randn(16, 3, 3) * 0.01
 **文件**: `train_rgbd_direct.py`
 
 **关键配置**:
+
 ```python
 model.train(
-    data='datasets/tennis-yolo/tennis-yolo.yaml',
+    data="datasets/tennis-yolo/tennis-yolo.yaml",
     epochs=100,
     batch=4,
-    workers=0,       # ✅ Windows多进程修复
-    amp=False,       # ✅ 禁用AMP检查
-    mosaic=0.0,      # ✅ 禁用Mosaic
-    mixup=0.0,       # ✅ 禁用Mixup
-    copy_paste=0.0   # ✅ 禁用Copy-Paste
+    workers=0,  # ✅ Windows多进程修复
+    amp=False,  # ✅ 禁用AMP检查
+    mosaic=0.0,  # ✅ 禁用Mosaic
+    mixup=0.0,  # ✅ 禁用Mixup
+    copy_paste=0.0,  # ✅ 禁用Copy-Paste
 )
 
 # ✅ Windows多进程保护
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 ```
 
@@ -138,24 +142,24 @@ nc: 1
 names:
   0: tennis_ball
 
-rgbd: true        # ✅ 启用RGBD模式
-channels: 4       # ✅ 4通道输入
+rgbd: true # ✅ 启用RGBD模式
+channels: 4 # ✅ 4通道输入
 ```
 
 ---
 
 ## 🐛 解决的问题清单
 
-| # | 问题 | 状态 | 解决方案 |
-|---|------|------|---------|
-| 1 | 数据加载只读取3通道 | ✅ | 使用 `cv2.IMREAD_UNCHANGED` |
-| 2 | 返回值数量不匹配 | ✅ | 返回3个值 `(img, ori, resized)` |
-| 3 | BGRA→RGBA转换错误 | ✅ | 正确的通道分离和合并 |
-| 4 | 预训练权重3通道 | ✅ | 创建4通道预训练权重 |
-| 5 | 数据增强冲突 | ✅ | 禁用 mosaic/mixup/copy_paste |
-| 6 | Windows多进程错误 | ✅ | `workers=0` + `if __name__` |
-| 7 | AMP检查失败 | ✅ | `amp=False` |
-| 8 | 训练后模型变回3通道 | ✅ | 正确的数据加载+4通道权重 |
+| #   | 问题                | 状态 | 解决方案                        |
+| --- | ------------------- | ---- | ------------------------------- |
+| 1   | 数据加载只读取3通道 | ✅   | 使用 `cv2.IMREAD_UNCHANGED`     |
+| 2   | 返回值数量不匹配    | ✅   | 返回3个值 `(img, ori, resized)` |
+| 3   | BGRA→RGBA转换错误   | ✅   | 正确的通道分离和合并            |
+| 4   | 预训练权重3通道     | ✅   | 创建4通道预训练权重             |
+| 5   | 数据增强冲突        | ✅   | 禁用 mosaic/mixup/copy_paste    |
+| 6   | Windows多进程错误   | ✅   | `workers=0` + `if __name__`     |
+| 7   | AMP检查失败         | ✅   | `amp=False`                     |
+| 8   | 训练后模型变回3通道 | ✅   | 正确的数据加载+4通道权重        |
 
 **总计**: 8个主要问题，全部解决 ✅
 
@@ -165,14 +169,14 @@ channels: 4       # ✅ 4通道输入
 
 ### 完整文档列表
 
-| # | 文档名称 | 页数 | 字数 | 状态 |
-|---|---------|------|------|------|
-| 1 | RGBD_PROBLEM_ANALYSIS.md | ~15页 | ~3,500字 | ✅ |
-| 2 | RGBD_SOLUTION_GUIDE.md | ~25页 | ~6,000字 | ✅ |
-| 3 | PROJECT_STRUCTURE.md | ~15页 | ~4,000字 | ✅ |
-| 4 | RGBD_TRAINING_GUIDE.md | ~10页 | ~2,500字 | ✅ |
-| 5 | RGBD_DOCUMENTATION_INDEX.md | ~5页 | ~1,500字 | ✅ |
-| 6 | RGBD_PROJECT_SUMMARY.md (本文档) | ~8页 | ~2,000字 | ✅ |
+| #   | 文档名称                         | 页数  | 字数     | 状态 |
+| --- | -------------------------------- | ----- | -------- | ---- |
+| 1   | RGBD_PROBLEM_ANALYSIS.md         | ~15页 | ~3,500字 | ✅   |
+| 2   | RGBD_SOLUTION_GUIDE.md           | ~25页 | ~6,000字 | ✅   |
+| 3   | PROJECT_STRUCTURE.md             | ~15页 | ~4,000字 | ✅   |
+| 4   | RGBD_TRAINING_GUIDE.md           | ~10页 | ~2,500字 | ✅   |
+| 5   | RGBD_DOCUMENTATION_INDEX.md      | ~5页  | ~1,500字 | ✅   |
+| 6   | RGBD_PROJECT_SUMMARY.md (本文档) | ~8页  | ~2,000字 | ✅   |
 
 **总计**: 6个文档，~78页，~19,500字
 
@@ -181,7 +185,9 @@ channels: 4       # ✅ 4通道输入
 ### 文档内容概览
 
 #### 📋 RGBD_PROBLEM_ANALYSIS.md
+
 **内容**:
+
 - 问题发现过程
 - 6大根本原因分析
 - 问题严重程度评估
@@ -189,7 +195,9 @@ channels: 4       # ✅ 4通道输入
 - 关键发现和经验教训
 
 #### 💡 RGBD_SOLUTION_GUIDE.md
+
 **内容**:
+
 - 6步修复方案详解
 - 完整代码示例
 - 训练脚本配置
@@ -198,7 +206,9 @@ channels: 4       # ✅ 4通道输入
 - 最佳实践和进阶用法
 
 #### 📂 PROJECT_STRUCTURE.md
+
 **内容**:
+
 - 完整项目目录树
 - 核心文件说明
 - 数据集格式规范
@@ -207,7 +217,9 @@ channels: 4       # ✅ 4通道输入
 - 项目统计信息
 
 #### 📘 RGBD_TRAINING_GUIDE.md
+
 **内容**:
+
 - RGBD训练概述
 - 权重转换方案
 - 数据加载策略
@@ -215,14 +227,18 @@ channels: 4       # ✅ 4通道输入
 - 验证评估方法
 
 #### 📚 RGBD_DOCUMENTATION_INDEX.md
+
 **内容**:
+
 - 文档导航
 - 阅读路径推荐
 - 内容对比表
 - 快速链接
 
 #### ✅ RGBD_PROJECT_SUMMARY.md (本文档)
+
 **内容**:
+
 - 项目完成总结
 - 成果汇总
 - 关键修改
@@ -237,10 +253,10 @@ channels: 4       # ✅ 4通道输入
 
 ```python
 # ❌ 错误方式（丢失alpha通道）
-img = cv2.imread('image.png')  # 只读取BGR
+img = cv2.imread("image.png")  # 只读取BGR
 
 # ✅ 正确方式（保留所有通道）
-img = cv2.imread('image.png', cv2.IMREAD_UNCHANGED)  # 读取BGRA
+img = cv2.imread("image.png", cv2.IMREAD_UNCHANGED)  # 读取BGRA
 ```
 
 ### 2. 颜色空间转换
@@ -257,7 +273,7 @@ img = cv2.merge([r, g, b, a])  # BGRA → RGBA
 
 ```python
 # 从3通道扩展到4通道
-weight_3ch = pretrained['layer.weight']  # [C_out, 3, H, W]
+weight_3ch = pretrained["layer.weight"]  # [C_out, 3, H, W]
 weight_4ch = torch.zeros(C_out, 4, H, W)
 
 # 复制RGB权重
@@ -271,7 +287,7 @@ weight_4ch[:, 3, :, :] = torch.randn(C_out, H, W) * 0.01
 
 ```python
 # 必需的代码结构
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 
 # 训练配置
@@ -284,9 +300,9 @@ model.train(..., workers=0)  # Windows设置为0
 # 4通道图像不兼容的增强
 model.train(
     ...,
-    mosaic=0.0,      # 禁用Mosaic
-    mixup=0.0,       # 禁用Mixup
-    copy_paste=0.0   # 禁用Copy-Paste
+    mosaic=0.0,  # 禁用Mosaic
+    mixup=0.0,  # 禁用Mixup
+    copy_paste=0.0,  # 禁用Copy-Paste
 )
 ```
 
@@ -351,14 +367,15 @@ print(f'通道数: {model[\"model\"].model[0].conv.weight.shape[1]}')
 ### 模型使用
 
 ```python
-from ultralytics import YOLO
 import cv2
 
+from ultralytics import YOLO
+
 # 加载模型
-model = YOLO('runs/detect/train_rgbd_python_api36/weights/best.pt')
+model = YOLO("runs/detect/train_rgbd_python_api36/weights/best.pt")
 
 # 读取4通道图像
-img = cv2.imread('test.png', cv2.IMREAD_UNCHANGED)
+img = cv2.imread("test.png", cv2.IMREAD_UNCHANGED)
 
 # 推理
 results = model(img)
@@ -371,15 +388,15 @@ results[0].show()
 
 ## 💯 项目成功标准
 
-| 标准 | 要求 | 实际 | 状态 |
-|------|------|------|------|
-| 模型通道数 | 4通道 | 4通道 | ✅ |
-| 数据加载 | 4通道PNG | 4通道PNG | ✅ |
-| 训练完成 | 100 epochs | 100 epochs | ✅ |
-| 模型性能 | mAP50>0.8 | mAP50>0.85 | ✅ |
-| 代码可复现 | 完整脚本 | 完整脚本 | ✅ |
-| 文档完整 | 全面说明 | 6个文档 | ✅ |
-| 问题解决 | 所有问题 | 8/8 | ✅ |
+| 标准       | 要求       | 实际       | 状态 |
+| ---------- | ---------- | ---------- | ---- |
+| 模型通道数 | 4通道      | 4通道      | ✅   |
+| 数据加载   | 4通道PNG   | 4通道PNG   | ✅   |
+| 训练完成   | 100 epochs | 100 epochs | ✅   |
+| 模型性能   | mAP50>0.8  | mAP50>0.85 | ✅   |
+| 代码可复现 | 完整脚本   | 完整脚本   | ✅   |
+| 文档完整   | 全面说明   | 6个文档    | ✅   |
+| 问题解决   | 所有问题   | 8/8        | ✅   |
 
 **总体评分**: ⭐⭐⭐⭐⭐ (5/5)
 
@@ -388,6 +405,7 @@ results[0].show()
 ## 🔬 技术验证
 
 ### 验证1: 模型通道数
+
 ```bash
 ✅ 预训练模型: 4通道
 ✅ 训练后模型: 4通道
@@ -395,6 +413,7 @@ results[0].show()
 ```
 
 ### 验证2: 数据加载
+
 ```bash
 ✅ 图像读取: (480, 640, 4)
 ✅ 颜色空间: RGBA
@@ -402,6 +421,7 @@ results[0].show()
 ```
 
 ### 验证3: 训练稳定性
+
 ```bash
 ✅ 无通道错误
 ✅ 无数据增强冲突
@@ -410,6 +430,7 @@ results[0].show()
 ```
 
 ### 验证4: 性能指标
+
 ```bash
 ✅ mAP50: 0.85+
 ✅ Precision: 0.90+
@@ -422,12 +443,14 @@ results[0].show()
 ## 📈 项目影响
 
 ### 技术贡献
+
 - ✅ 首个完整的YOLOv8 4通道RGBD实现
 - ✅ 详细的问题分析和解决方案
 - ✅ 可复现的训练流程
 - ✅ 完善的文档体系
 
 ### 实用价值
+
 - 🎯 适用于任何RGBD目标检测任务
 - 🎯 可扩展到其他多通道输入场景
 - 🎯 为社区提供完整参考
@@ -466,6 +489,7 @@ results[0].show()
 ## 📞 项目信息
 
 ### 版本信息
+
 ```
 项目版本: v1.0
 完成日期: 2025-11-01
@@ -475,6 +499,7 @@ Python版本: 3.10.18
 ```
 
 ### 维护信息
+
 ```
 维护者: M-Sir-zhou
 仓库: yolov8-rgbd-detection
@@ -483,6 +508,7 @@ Python版本: 3.10.18
 ```
 
 ### 联系方式
+
 - 📧 Email: [待补充]
 - 🐙 GitHub: M-Sir-zhou
 - 📝 Issues: [GitHub Issues页面]
@@ -492,14 +518,17 @@ Python版本: 3.10.18
 ## 🙏 致谢
 
 ### 技术支持
+
 - **Ultralytics Team**: YOLOv8框架
 - **PyTorch Team**: 深度学习框架
 - **OpenCV Community**: 计算机视觉库
 
 ### 数据集
+
 - Tennis Ball RGBD数据集（自行采集）
 
 ### 参考资源
+
 - Ultralytics官方文档
 - PyTorch官方文档
 - 相关学术论文和开源项目
